@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -17,7 +18,7 @@ int main()
     struct stat s;
     fstat(k_fd, &s);
 
-    const char *kernelSource = (char *)malloc(s.st_size * sizeof(char));
+    char *kernelSource = (char *)malloc(s.st_size * sizeof(char));
     kernelSource = (char *)mmap(0, s.st_size, PROT_READ, MAP_PRIVATE, k_fd, 0);
 
     printf("%s\n", kernelSource);
@@ -110,7 +111,7 @@ int main()
         exit(1);
     }
 
-    // create kernel. 
+    // create kernel.
     // Note: kernel_name must match function name
     cl_kernel kernel = clCreateKernel(program, "vec_add", &status);
 
@@ -132,7 +133,7 @@ int main()
     localWorkSize[0] = 32 * 32;
 
     status = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
-    
+
     // read back result
     status = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, sizeof(int) * elements, C, 0, NULL, NULL);
 
@@ -140,6 +141,10 @@ int main()
     {
         printf("%d\t", C[i]);
     }
+
+    //free kernel string
+    munmap(kernelSource, s.st_size);
+    close(k_fd);
 
     // free host memory
     free(A);
